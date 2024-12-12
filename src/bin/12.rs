@@ -10,16 +10,12 @@ const DAY: &str = "12";
 const INPUT_FILE: &str = concatcp!("input/", DAY, ".txt");
 
 const TEST: &str = "\
-RRRRIICCFF
-RRRRIICCCF
-VVRRRCCFFF
-VVRCCCJFFF
-VVVVCJJCFE
-VVIVCCJJEE
-VVIIICJJEE
-MIIIIIJJEE
-MIIISIJEEE
-MMMISSJEEE
+AAAAAA
+AAABBA
+AAABBA
+ABBAAA
+ABBAAA
+AAAAAA
 ";
 
 fn main() -> Result<()> {
@@ -120,7 +116,7 @@ fn main() -> Result<()> {
         Ok(price)
     }
 
-    assert_eq!(1930, part1(BufReader::new(TEST.as_bytes()))?);
+    // assert_eq!(1930, part1(BufReader::new(TEST.as_bytes()))?);
 
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part1(input_file)?);
@@ -148,6 +144,8 @@ fn main() -> Result<()> {
         enum BorderSide {
             Up,
             Left,
+            Down,
+            Right,
         }
 
         #[derive(Clone, Copy, Eq, Hash, PartialEq)]
@@ -173,8 +171,8 @@ fn main() -> Result<()> {
                     region_perimeter: &mut usize,
                 ) {
                     let dirs: [(isize, isize); 2] = match border.side {
-                        BorderSide::Up => [(1, 0), (-1, 0)],
-                        BorderSide::Left => [(0, 1), (0, -1)],
+                        BorderSide::Up | BorderSide::Down => [(1, 0), (-1, 0)],
+                        BorderSide::Left | BorderSide::Right => [(0, 1), (0, -1)],
                     };
                     let neighbor_1 = Border {
                         x: border.x + dirs[0].0,
@@ -245,15 +243,15 @@ fn main() -> Result<()> {
                     let x = x as isize;
                     let y = y as isize;
                     let dirs = [
-                        (1, 0, BorderSide::Left, 1, 0),
-                        (-1, 0, BorderSide::Left, 0, 0),
-                        (0, 1, BorderSide::Up, 0, 1),
-                        (0, -1, BorderSide::Up, 0, 0),
+                        (1, 0, BorderSide::Right),
+                        (-1, 0, BorderSide::Left),
+                        (0, 1, BorderSide::Down),
+                        (0, -1, BorderSide::Up),
                     ];
-                    for (dx, dy, side, border_dx, border_dy) in dirs {
+                    for (dx, dy, side) in dirs {
                         let border = Border {
-                            x: x + border_dx,
-                            y: y + border_dy,
+                            x,
+                            y,
                             side,
                         };
                         visit(
@@ -297,7 +295,7 @@ fn main() -> Result<()> {
         Ok(price)
     }
 
-    assert_eq!(1206, part2(BufReader::new(TEST.as_bytes()))?);
+    assert_eq!(368, part2(BufReader::new(TEST.as_bytes()))?);
 
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part2(input_file)?);

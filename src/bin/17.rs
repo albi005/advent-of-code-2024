@@ -10,7 +10,7 @@ const DAY: &str = "17";
 const INPUT_FILE: &str = concatcp!("input/", DAY, ".txt");
 
 const TEST: &str = "\
-Register A: 98475985223
+Register A: 6284759213657113
 Register B: 0
 Register C: 0
 
@@ -77,7 +77,7 @@ fn main() -> Result<()> {
         let mut ra: usize = lines[0][12..].parse()?;
         let mut output: Vec<usize> = Vec::new();
         loop {
-            output.push(forward(ra));
+            output.push(forward(ra) & 0b111);
             ra >>= 3;
             if ra == 0 { break; }
         }
@@ -183,12 +183,32 @@ fn main() -> Result<()> {
             dbg!(forward(i), forward1(i));
         }
 
+        // ACTUAL SOLUTION // final final
         let lines: Vec<_> = reader.lines().flatten().collect();
         let program: Vec<u8> = lines[4][9..].split(',').map(|instruction| instruction.parse().unwrap()).collect();
+        fn rec(a: usize, instructions: &[u8]) -> Option<usize> {
+            if instructions.len() == 0 {
+                return Some(a);
+            }
+            let a = a << 3;
+            for i in (0..8) {
+                let a = a | i;
+                let output = forward(a) & 0b111;
+                if output == instructions[instructions.len() - 1] as usize {
+                    if let Some(a) = rec(a, &instructions[..instructions.len()-1]) {
+                        return Some(a);
+                    }
+                }
+            }
+            None
+        }
+
         Ok(
-            program.iter().fold(0, |a, instruction| {
-                (a << 3) | ((0usize..8).find(|x| forward(*x) == *instruction as usize)).unwrap()
-            })
+            // program.iter().rev().fold(0, |a, instruction| {
+            //     let a = a << 3;
+            //     ((0usize..8).map(|n| a | n).find(|&a| (forward(a) & 0b111) == *instruction as usize)).unwrap()
+            // })
+            rec(0, &program).unwrap()
         )
     }
 

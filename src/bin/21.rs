@@ -2,11 +2,11 @@ use adv_code_2024::*;
 use anyhow::*;
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
-use log::log;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::ptr::write;
+use std::iter;
+
 
 const DAY: &str = "21";
 const INPUT_FILE: &str = concatcp!("input/", DAY, ".txt");
@@ -25,58 +25,87 @@ fn main() -> Result<()> {
     //region Part 1
     println!("=== Part 1 ===");
 
-    struct Keypad {
-        width: usize,
-        height: usize,
-        illegal: (usize, usize),
-    }
-
-    // given a directional or numeric keypad and two keys on it, return coordinates of keys to be pressed on a directional keypad
-    fn get_moves(
+    fn get_min_moves(
         from: (usize, usize),
         to: (usize, usize),
-        keypad: &Vec<Vec<Option<char>>>,
-    ) -> Vec<(usize, usize)> {
-        let mut moves: Vec<(usize, usize)> = Vec::new();
-        let mut queue: VecDeque<((usize, usize), Option<((usize, usize), (usize, usize))>)> =
-            VecDeque::new();
-        let mut visited: HashMap<(usize, usize), Option<((usize, usize), (usize, usize))>> =
-            HashMap::new();
-        queue.push_back((from, None));
-        loop {
-            let (curr, prev) = queue.pop_front().unwrap();
-            if curr == to {
-                break;
-            }
-            if visited.contains_key(&curr) {
-                continue;
-            }
-            visited.insert(curr, prev);
-            let (x, y) = curr;
-            for ((dx, dy), key) in [
-                ((0, 1), (1, 1)),
-                ((0, -1), (1, 0)),
-                ((1, 0), (2, 1)),
-                ((-1, 0), (0, 1)),
-            ] {
-                if let (Some(x), Some(y)) = (x.checked_add_signed(dx), y.checked_add_signed(dy)) {
-                    if x < keypad[0].len() && y < keypad.len() && keypad[y][x].is_some() {
-                        queue.push_back(((x, y), Some((curr, key))));
-                    }
-                }
-            }
+        keypad: usize,
+        memo: &mut HashMap<((usize, usize), (usize, usize), usize), usize>,
+    ) -> usize {
+        if keypad == 0 {
+            return 1;
+        }
+        if from == to {
+            return 0;
+        }
+        if let Some(&min_moves) = memo.get(&(from, to, keypad)) {
+            return min_moves;
         }
 
-        todo!()
+        let directional_keypad_empty = (0, 0);
+        let directional_keypad_up = ((1, 0), (0, -1));
+        let directional_keypad_a = (2, 0);
+        let directional_keypad_left = ((0, 1), (-1, 0));
+        let directional_keypad_down = ((1, 1), (0, 1));
+        let directional_keypad_right = ((2, 1), (1, 0));
+        let numeric_keypad_empty = (3, 0);
+
+        [
+            directional_keypad_up,
+            directional_keypad_left,
+            directional_keypad_down,
+            directional_keypad_right,
+        ]
+        .iter()
+        .filter_map(|&(dir_key, diff)| {
+            if let (Some(x), Some(y)) = (
+                from.0.checked_add_signed(diff.0),
+                from.1.checked_add_signed(diff.1),
+            ) {
+                let next = (x, y);
+                let empty = match keypad {
+                    0 => numeric_keypad_empty,
+                    _ => directional_keypad_empty,
+                };
+                if next != empty {
+                    return Some(
+                        get_min_moves(next, to, keypad, memo)
+                        + get_min_moves(directional_keypad_a, dir_key, keypad - 1, memo)
+                    );
+                }
+            }
+            return None;
+        })
+        .min()
+        .unwrap()
     }
 
     fn part1<R: BufRead>(reader: R) -> Result<usize> {
+        let mut memo = HashMap::new();
         Ok(reader
             .lines()
             .flatten()
             .map(|line| {
-                let code = line[..line.len() - 1].parse::<usize>().unwrap();
-                code
+                let numeric_keypad = [
+                    (1, 3),
+                    (0, 2),
+                    (1, 2),
+                    (2, 2),
+                    (0, 1),
+                    (1, 1),
+                    (2, 1),
+                    (0, 0),
+                    (1, 0),
+                    (2, 0),
+                ];
+                let numeric_keypad_a = (2, 3);
+                line[..line.len() - 1]
+                    .chars()
+                    .map(|c| numeric_keypad[c.to_digit(10).unwrap() as usize])
+                    .chain(iter::once(numeric_keypad_a))
+                    .fold((numeric_keypad_a, 0), |(prev, sum), curr| {
+                        (curr, sum + get_min_moves(prev, curr, 0, &mut memo))
+                    })
+                    .1
             })
             .sum())
     }

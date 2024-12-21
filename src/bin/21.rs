@@ -2,11 +2,10 @@ use adv_code_2024::*;
 use anyhow::*;
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
-use std::collections::{HashMap};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::iter;
-
 
 const DAY: &str = "21";
 const INPUT_FILE: &str = concatcp!("input/", DAY, ".txt");
@@ -26,18 +25,19 @@ fn main() -> Result<()> {
     println!("=== Part 1 ===");
 
     fn get_min_moves(
-        from: (usize, usize),
-        to: (usize, usize),
+        prev: (usize, usize),
+        curr: (usize, usize),
+        target: (usize, usize),
         keypad: usize,
-        memo: &mut HashMap<((usize, usize), (usize, usize), usize), usize>,
+        memo: &mut HashMap<((usize, usize), (usize, usize), (usize, usize), usize), usize>,
     ) -> usize {
-        if keypad == 0 {
+        if keypad == 3 {
             return 1;
         }
-        if from == to {
+        if start == target {
             return 0;
         }
-        if let Some(&min_moves) = memo.get(&(from, to, keypad)) {
+        if let Some(&min_moves) = memo.get(&(start, prev, target, keypad)) {
             return min_moves;
         }
 
@@ -56,10 +56,10 @@ fn main() -> Result<()> {
             directional_keypad_right,
         ]
         .iter()
-        .filter_map(|&(dir_key, diff)| {
+        .filter_map(|&(key, diff)| {
             if let (Some(x), Some(y)) = (
-                from.0.checked_add_signed(diff.0),
-                from.1.checked_add_signed(diff.1),
+                start.0.checked_add_signed(diff.0),
+                start.1.checked_add_signed(diff.1),
             ) {
                 let next = (x, y);
                 let empty = match keypad {
@@ -68,8 +68,8 @@ fn main() -> Result<()> {
                 };
                 if next != empty {
                     return Some(
-                        get_min_moves(next, to, keypad, memo)
-                        + get_min_moves(directional_keypad_a, dir_key, keypad - 1, memo)
+                        get_min_moves(next, target, key, keypad, memo)
+                            + get_min_moves(prev, key, prev, keypad - 1, memo),
                     );
                 }
             }
@@ -103,7 +103,7 @@ fn main() -> Result<()> {
                     .map(|c| numeric_keypad[c.to_digit(10).unwrap() as usize])
                     .chain(iter::once(numeric_keypad_a))
                     .fold((numeric_keypad_a, 0), |(prev, sum), curr| {
-                        (curr, sum + get_min_moves(prev, curr, 0, &mut memo))
+                        (curr, sum + get_min_moves(prev, curr, prev, 0, &mut memo))
                     })
                     .1
             })

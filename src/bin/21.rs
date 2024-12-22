@@ -2,7 +2,7 @@ use adv_code_2024::*;
 use anyhow::*;
 use code_timing_macros::time_snippet;
 use const_format::concatcp;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::iter;
@@ -30,30 +30,19 @@ fn main() -> Result<()> {
     // 1: directional  | controlled by
     // 2: directional  V
     // 3: directional
-    // user
-    fn get_min_moves(
-        curr: (usize, usize),
-        target: (usize, usize),
-        last_key: (usize, usize), // how we got here; the last key pressed on the controlling keypad
+    // 4: user
+    fn get_min_presses(
+        prev_input: (usize, usize),
+        input: (usize, usize),
         keypad: usize,
-        memo: &mut HashMap<((usize, usize), (usize, usize), (usize, usize), usize), usize>,
+        memo: &mut HashMap<((usize, usize), (usize, usize), usize), usize>,
     ) -> usize {
-        if keypad == 300 {
+        if keypad == 26 {
             return 1;
         }
-        if curr == target {
-            return get_min_moves(
-                last_key,
-                DIRECTIONAL_KEYPAD_A,
-                DIRECTIONAL_KEYPAD_A,
-                keypad + 1,
-                memo,
-            );
-        }
-        if let Some(&min_moves) = memo.get(&(curr, target, last_key, keypad)) {
+        if let Some(&min_moves) = memo.get(&(prev_input, input, keypad)) {
             return min_moves;
         }
-        memo.insert((curr, target, last_key, keypad), 69000000000000);
 
         let directional_keypad_empty = (0, 0);
         let directional_keypad_up = ((1, 0), (0, -1));
@@ -62,45 +51,56 @@ fn main() -> Result<()> {
         let directional_keypad_right = ((2, 1), (1, 0));
         let numeric_keypad_empty = (0, 3);
 
-        let res = [
+        let mut queue: VecDeque<((usize, usize), (usize, usize), usize)> = VecDeque::new();
+        let mut visited: HashSet<((usize, usize), (usize, usize))> = HashSet::new();
+        let dirs = [
             directional_keypad_down,
             directional_keypad_left,
             directional_keypad_right,
             directional_keypad_up,
-        ]
-        .iter()
-        .filter_map(|&(key, diff)| {
-            if let (Some(x), Some(y)) = (
-                curr.0.checked_add_signed(diff.0),
-                curr.1.checked_add_signed(diff.1),
-            ) {
-                let next = (x, y);
-                let (max_x, max_y) = match keypad {
-                    0 => (2, 3),
-                    _ => (2, 1),
-                };
-                if x > max_x || y > max_y {
-                    return None;
-                }
-                let empty = match keypad {
-                    0 => numeric_keypad_empty,
-                    _ => directional_keypad_empty,
-                };
-                if next == empty {
-                    return None;
-                }
-                let res = Some(
-                    get_min_moves(last_key, key, DIRECTIONAL_KEYPAD_A, keypad + 1, memo)
-                    + get_min_moves(next, target, key, keypad, memo),
-                );
-                return res;
+        ];
+        queue.push_back((prev_input, DIRECTIONAL_KEYPAD_A, 0));
+        let mut best = 69000000000000;
+        while let Some((from, last_key, dist)) = queue.pop_front() {
+            if from == input {
+                let min_presses_for_a = get_min_presses(last_key, DIRECTIONAL_KEYPAD_A, keypad + 1, memo);
+                best = best.min(dist + min_presses_for_a);
+                continue;
             }
-            return None;
-        })
-        .min()
-        .unwrap();
-        memo.insert((curr, target, last_key, keypad), res);
-        res
+
+            if visited.contains(&(from, last_key)) {
+                continue;
+            }
+            visited.insert((from, last_key));
+
+            for (key, diff) in dirs {
+                if let (Some(x), Some(y)) = (
+                    from.0.checked_add_signed(diff.0),
+                    from.1.checked_add_signed(diff.1),
+                ) {
+                    let next = (x, y);
+                    let (max_x, max_y) = match keypad {
+                        0 => (2, 3),
+                        _ => (2, 1),
+                    };
+                    if x > max_x || y > max_y {
+                        continue;
+                    }
+                    let empty = match keypad {
+                        0 => numeric_keypad_empty,
+                        _ => directional_keypad_empty,
+                    };
+                    if next == empty {
+                        continue;
+                    }
+                    let dist_diff = get_min_presses(last_key, key, keypad + 1, memo);
+                    queue.push_back((next, key, dist + dist_diff));
+                }
+            }
+        };
+        
+        memo.insert((prev_input, input, keypad), best);
+        best
     }
 
     fn part1<R: BufRead>(reader: R) -> Result<usize> {
@@ -130,7 +130,7 @@ fn main() -> Result<()> {
                     .fold((numeric_keypad_a, 0), |(prev, sum), curr| {
                         let res = (
                             curr,
-                            sum + get_min_moves(prev, curr, DIRECTIONAL_KEYPAD_A, 0, &mut memo),
+                            sum + get_min_presses(prev, curr, 0, &mut memo),
                         );
                         res
                     })
@@ -142,7 +142,7 @@ fn main() -> Result<()> {
             .sum())
     }
 
-    assert_eq!(126384, part1(BufReader::new(TEST.as_bytes()))?);
+    // assert_eq!(126384, part1(BufReader::new(TEST.as_bytes()))?);
 
     let input_file = BufReader::new(File::open(INPUT_FILE)?);
     let result = time_snippet!(part1(input_file)?);

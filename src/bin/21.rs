@@ -24,59 +24,83 @@ fn main() -> Result<()> {
     //region Part 1
     println!("=== Part 1 ===");
 
+    const DIRECTIONAL_KEYPAD_A: (usize, usize) = (2, 0);
+
+    // 0: numerical
+    // 1: directional  | controlled by
+    // 2: directional  V
+    // 3: directional
+    // user
     fn get_min_moves(
-        prev: (usize, usize),
         curr: (usize, usize),
         target: (usize, usize),
+        last_key: (usize, usize), // how we got here; the last key pressed on the controlling keypad
         keypad: usize,
         memo: &mut HashMap<((usize, usize), (usize, usize), (usize, usize), usize), usize>,
     ) -> usize {
-        if keypad == 3 {
+        if keypad == 300 {
             return 1;
         }
-        if start == target {
-            return 0;
+        if curr == target {
+            return get_min_moves(
+                last_key,
+                DIRECTIONAL_KEYPAD_A,
+                DIRECTIONAL_KEYPAD_A,
+                keypad + 1,
+                memo,
+            );
         }
-        if let Some(&min_moves) = memo.get(&(start, prev, target, keypad)) {
+        if let Some(&min_moves) = memo.get(&(curr, target, last_key, keypad)) {
             return min_moves;
         }
+        memo.insert((curr, target, last_key, keypad), 69000000000000);
 
         let directional_keypad_empty = (0, 0);
         let directional_keypad_up = ((1, 0), (0, -1));
-        let directional_keypad_a = (2, 0);
         let directional_keypad_left = ((0, 1), (-1, 0));
         let directional_keypad_down = ((1, 1), (0, 1));
         let directional_keypad_right = ((2, 1), (1, 0));
-        let numeric_keypad_empty = (3, 0);
+        let numeric_keypad_empty = (0, 3);
 
-        [
-            directional_keypad_up,
-            directional_keypad_left,
+        let res = [
             directional_keypad_down,
+            directional_keypad_left,
             directional_keypad_right,
+            directional_keypad_up,
         ]
         .iter()
         .filter_map(|&(key, diff)| {
             if let (Some(x), Some(y)) = (
-                start.0.checked_add_signed(diff.0),
-                start.1.checked_add_signed(diff.1),
+                curr.0.checked_add_signed(diff.0),
+                curr.1.checked_add_signed(diff.1),
             ) {
                 let next = (x, y);
+                let (max_x, max_y) = match keypad {
+                    0 => (2, 3),
+                    _ => (2, 1),
+                };
+                if x > max_x || y > max_y {
+                    return None;
+                }
                 let empty = match keypad {
                     0 => numeric_keypad_empty,
                     _ => directional_keypad_empty,
                 };
-                if next != empty {
-                    return Some(
-                        get_min_moves(next, target, key, keypad, memo)
-                            + get_min_moves(prev, key, prev, keypad - 1, memo),
-                    );
+                if next == empty {
+                    return None;
                 }
+                let res = Some(
+                    get_min_moves(last_key, key, DIRECTIONAL_KEYPAD_A, keypad + 1, memo)
+                    + get_min_moves(next, target, key, keypad, memo),
+                );
+                return res;
             }
             return None;
         })
         .min()
-        .unwrap()
+        .unwrap();
+        memo.insert((curr, target, last_key, keypad), res);
+        res
     }
 
     fn part1<R: BufRead>(reader: R) -> Result<usize> {
@@ -98,14 +122,22 @@ fn main() -> Result<()> {
                     (2, 0),
                 ];
                 let numeric_keypad_a = (2, 3);
-                line[..line.len() - 1]
+                let num: usize = line[..line.len() - 1].parse().unwrap();
+                let res = line[..line.len() - 1]
                     .chars()
                     .map(|c| numeric_keypad[c.to_digit(10).unwrap() as usize])
                     .chain(iter::once(numeric_keypad_a))
                     .fold((numeric_keypad_a, 0), |(prev, sum), curr| {
-                        (curr, sum + get_min_moves(prev, curr, prev, 0, &mut memo))
+                        let res = (
+                            curr,
+                            sum + get_min_moves(prev, curr, DIRECTIONAL_KEYPAD_A, 0, &mut memo),
+                        );
+                        res
                     })
                     .1
+                    * num;
+                dbg!(res / num, num);
+                res
             })
             .sum())
     }

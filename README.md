@@ -1,23 +1,33 @@
-# Template for solving Advent of Code puzzles in Rust with RustRover
+# Advent Of Code 2024 in Rust
 
-Read the [blog post](https://blog.jetbrains.com/rust/2024/11/29/advent-of-code-in-rust-for-the-rest-of-us/) that explains the structure and rationale behind this template.
+Solutions are in the [`src/bin`](src/bin) directory.
 
-## Usage
-
-1. Create a new project from the template repository:
-   - Using GitHub’s templating feature: Simply click the Use this template [button](https://github.com/new?template_name=advent-of-code-rust-template&template_owner=bravit) on the repository page, create a new repository, and then open it in [RustRover](https://www.jetbrains.com/rust/) by selecting *File | New | Project From Version Control…*.
-   -  Adding the template to RustRover: You can integrate the template directly into RustRover and use the regular New Project wizard.
-
-2. Whenever you're ready to start solving a new day's puzzle:
-   - Open the `bin` folder, copy and paste the `NN.rs` file into it, and give it the corresponding name (`01.rs`, `02.rs`, etc.).
-   - In the `input` folder, create and fill the input data file (`01.txt`, `02.txt`, etc.).
-   - Fill in the `DAY` constant in the freshly created file.
-   - Run the current day's solution to check if it compiles (you can use the gutter icon next to the `main` function).
-   - Fill in `<TEST-INPUT>`.
-   - Write the expected answer for the test data in the `assert_eq` statement in *Part 1*.
-   - Now you're ready to write your solution in the `part1` function (inside `main`).
-   - Use `Shift+F10` (Win/Linux) or `Ctrl-R` (macOS) to re-run the same program.
-
-3. When you're done with the first part of the puzzle, use folding to hide *Part 1*.
-
-4. Uncomment *Part 2*, fill in the test data assertion, and start solving it.
+```
+      --------Part 1---------   --------Part 2---------
+Day       Time    Rank  Score       Time    Rank  Score
+ 25   08:59:09   13214      0   09:00:28    8270      0
+ 24   06:26:14   11743      0       >24h   10839      0
+ 23   08:07:54   13213      0   09:50:51   11672      0
+ 22   08:50:06   13716      0   11:30:59   11919      0
+ 21       >24h   13061      0       >24h    9240      0
+ 20   11:31:26   15694      0   12:04:33   11618      0
+ 19   03:43:43   10222      0   03:52:56    8450      0
+ 18   08:42:20   15977      0   09:07:11   15410      0
+ 17   12:54:49   20349      0   20:19:27   14611      0
+ 16   06:51:14   11900      0   07:55:44    8577      0
+ 15   05:17:27   13190      0   08:06:46    9776      0
+ 14   06:32:42   17655      0   08:12:44   15830      0
+ 13   07:59:45   20994      0   14:46:37   24007      0
+ 12   07:39:55   21436      0   09:10:56   13259      0
+ 11   08:54:27   32472      0   09:33:37   23351      0
+ 10   06:22:50   22721      0   06:24:40   21599      0
+  9   09:20:08   29540      0   17:10:36   32169      0
+  8   06:48:12   24651      0   06:53:57   22169      0
+  7   09:10:04   32538      0   09:26:53   30143      0
+  6   08:41:27   39640      0   09:59:18   24956      0
+  5   07:07:40   37553      0   07:39:05   30405      0
+  4   06:18:36   36957      0   06:30:08   31382      0
+  3   16:23:47   90067      0   16:42:48   79203      0
+  2       >24h  132374      0       >24h  104529      0
+  1       >24h  168317      0       >24h  157176      0
+```
